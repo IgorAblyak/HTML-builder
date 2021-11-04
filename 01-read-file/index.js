@@ -6,4 +6,6 @@ const filePath = path.join(__dirname, 'text.txt');
 
 let readableStream = fs.createReadStream(filePath, 'utf-8');
 
-readableStream.pipe(stdout);
+readableStream.on('data', (data) => {
+  stdout.write(data.trim());
+});
