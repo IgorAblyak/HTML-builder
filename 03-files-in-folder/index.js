@@ -17,7 +17,7 @@ const dirPath = path.join(__dirname, 'secret-folder');
             path.basename(file, ext) + ' - ' + withoutPointExt + ' - ' + transformSize + ' kb'
           );
         } else {
-          fs.unlink(pathToFile);
+          fs.unlink(pathToFile).catch(() => console.log('\n'+'Done it!'));
         }
       });
     });
