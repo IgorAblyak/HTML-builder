@@ -5,8 +5,21 @@ const srcDirPath = path.join(__dirname, 'files');
 const destDirPath = path.join(__dirname, 'files-copy');
 
 async function copyDir() {
+  await fs.mkdir(destDirPath, { recursive: true } );
+  const fileList = await fs.readdir(srcDirPath);
+  fileList.map(file => {
+    const srcFilePath = path.join(srcDirPath, file);
+    const destFilePath = path.join(destDirPath, file);
+    fs.copyFile(srcFilePath, destFilePath);
+  });
+}
+
+async function main() {
   try {
-    const dirExists = await fs.access(destDirPath);
+    const dirExists = await fs.access(destDirPath)
+      .catch(() => {
+        copyDir();
+      });
     if (!dirExists) {
       (await fs.readdir(destDirPath))
         .forEach(file => {
@@ -14,17 +27,11 @@ async function copyDir() {
           fs.unlink(destFilePath);
         });
     }
-    await fs.mkdir(destDirPath, { recursive: true } );
+    copyDir();
     console.log('Files are copied!');
-    const fileList = await fs.readdir(srcDirPath);
-    fileList.map(file => {
-      const srcFilePath = path.join(srcDirPath, file);
-      const destFilePath = path.join(destDirPath, file);
-      fs.copyFile(srcFilePath, destFilePath);
-    });
   } catch (err) {
     console.log('Something happend!' + '\n', err);
   }
 }
 
-copyDir();
+main();
