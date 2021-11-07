@@ -14,10 +14,10 @@ const dirPath = path.join(__dirname, 'secret-folder');
         const transformSize = (res.size / 1024).toFixed(3);
         if (res.isFile()) {
           console.log(
-            path.basename(file, ext) + ' - ' + withoutPointExt + ' - ' + transformSize + ' kb'
+            path.basename(file, ext) + ' - ' + withoutPointExt + ' - ' + transformSize + ' Kbyte'
           );
         } else {
-          fs.unlink(pathToFile).catch(() => console.log('\n'+'Done it!'));
+          fs.unlink(pathToFile).catch(() => console.log(''));
         }
       });
     });
