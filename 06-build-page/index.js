@@ -6,6 +6,7 @@ const templateFilePath = path.join(__dirname, 'template.html');
 const stylesDirPath = path.join(__dirname, 'styles');
 const componentsPath = path.join(__dirname, 'components');
 const assetsDirPath = path.join(__dirname, 'assets');
+const projectAssetsPath = path.join(projectDirPath, 'assets');
 
 async function createDir(dirPath) {
   try {
@@ -78,34 +79,35 @@ async function mergeStyles() {
 }
   
 async function replaceTag() {
-  let contentTemp = await readTemplate(templateFilePath);
-  const tagName = contentTemp.match(/{{\w+}}/g);
-  createDir(projectDirPath);
-  tagName.forEach(async (item) => {
-    const name = item.match(/\w+/g);
-    const componentFilePath = await getFileHtmlPath(componentsPath, name);
-    const contentComponent = await readTemplate(componentFilePath);
-    contentTemp = contentTemp.replace(item, contentComponent);
-    const bundleFilePath = await getFileHtmlPath(projectDirPath, 'index');
-    fs.writeFile(bundleFilePath, contentTemp);
-  });
+  try {
+    let contentTemp = await readTemplate(templateFilePath);
+    const tagName = contentTemp.match(/{{\w+}}/g);
+    createDir(projectDirPath);
+    tagName.forEach(async (item) => {
+      const name = item.match(/\w+/g);
+      const componentFilePath = await getFileHtmlPath(componentsPath, name);
+      const contentComponent = await readTemplate(componentFilePath);
+      contentTemp = contentTemp.replace(item, contentComponent);
+      const bundleFilePath = await getFileHtmlPath(projectDirPath, 'index');
+      fs.writeFile(bundleFilePath, contentTemp);
+    });
+  } catch (err) {
+    console.log('Error with tags!' + '\n', err);
+  }
 }
 
-async function copyProcess(projectAssetsPath, x = assetsDirPath) {
+async function copyProcess(projectAssetsPath, assetsPath = assetsDirPath) {
   try {
     await fs.mkdir(projectAssetsPath, { recursive: true } );
-    const fileList = await fs.readdir(x);
+    const fileList = await fs.readdir(assetsPath);
     fileList.map(async file => {
-      const assetsSrcFilePath = await getPath(x, file);
+      const assetsSrcFilePath = await getPath(assetsPath, file);
       const assetsDestFilePath = await getPath(projectAssetsPath, file);
       const smthExist = await fs.stat(assetsSrcFilePath);
       if (smthExist.isDirectory()) {
         copyProcess(assetsDestFilePath, assetsSrcFilePath);
       } else if (smthExist.isFile()) {
-        const assetsSrcFilePath = await getPath(assetsDirPath, file);
-        
         fs.copyFile(assetsSrcFilePath, assetsDestFilePath);
-        copyProcess(assetsDestFilePath, assetsSrcFilePath);
       }
     });
   } catch (err) {
@@ -113,24 +115,26 @@ async function copyProcess(projectAssetsPath, x = assetsDirPath) {
   }
 }
 
-async function copyAssets() {
+async function copyAssets(assetsPath = projectAssetsPath) {
   try {
-    const projectAssetsPath = await getPath(projectDirPath, 'assets');
-        // const dirExists = await fs.stat(projectAssetsPath);
-    // const fileList = await fs.readdir(projectAssetsPath);
-    // if (dirExists.isDirectory() && fileList !== []) {
-    //   console.log(fileList);
-    //   fileList.forEach(async file => {
-    //     const assetsFilePath =  await getPath(projectAssetsPath, file);
-    //     console.log(file);
-    //     fs.unlink(assetsFilePath);
-    //   });
-    //   copyProcess(projectAssetsPath);
-    // }
+    await fs.access(projectAssetsPath)
+      .catch(() => {
+        console.log('Create assets!');
+        copyProcess(projectAssetsPath);
+      });
+    const fileList = await fs.readdir(assetsPath);
+    fileList.forEach(async file => {
+      const assetsFilePath =  await getPath(assetsPath, file);
+      const dirExists = await fs.stat(assetsFilePath);
+      if (dirExists.isDirectory() && fileList !== []) {
+        copyAssets(assetsFilePath);
+      } else if (dirExists.isFile())
+        fs.unlink(assetsFilePath);
+    });
     copyProcess(projectAssetsPath);
   } catch (err) {
     if (err.code == 'ENOENT') {
-      console.log('Directory does not exist.');
+      console.log('');
     }
   }
 }
